@@ -9,30 +9,49 @@ from langchain.llms import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 import platform
 
+# Configuración inicial de la página
+st.set_page_config(
+    page_title="Agente RAG - Chat PDF",
+    page_icon="💬",
+    layout="centered"
+)
+
 # App title and presentation
 st.title('Generación Aumentada por Recuperación (RAG) 💬')
-st.write("Versión de Python:", platform.python_version())
+st.caption(f"Versión de Python: {platform.python_version()}")
 
-# Load and display image
-try:
-    image = Image.open('Chat_pdf.png')
-    st.image(image, width=350)
-except Exception as e:
-    st.warning(f"No se pudo cargar la imagen: {e}")
-
-# Sidebar information
+# Sidebar information & API Key input
 with st.sidebar:
+    st.header("⚙️ Configuración")
     st.subheader("Este Agente te ayudará a realizar análisis sobre el PDF cargado")
+    
+    st.divider()
+    
+    # Get API key from user
+    ke = st.text_input('Ingresa tu Clave de OpenAI', type="password")
+    if ke:
+        os.environ['OPENAI_API_KEY'] = ke
+        st.success("API Key configurada correctamente", icon="🔑")
+    else:
+        st.warning("Por favor ingresa tu clave de API de OpenAI para continuar")
 
-# Get API key from user
-ke = st.text_input('Ingresa tu Clave de OpenAI', type="password")
-if ke:
-    os.environ['OPENAI_API_KEY'] = ke
-else:
-    st.warning("Por favor ingresa tu clave de API de OpenAI para continuar")
+# Layout de presentación (Imagen + Carga de archivo)
+col_img, col_info = st.columns([1, 1])
 
-# PDF uploader
-pdf = st.file_uploader("Carga el archivo PDF", type="pdf")
+with col_img:
+    # Load and display image
+    try:
+        image = Image.open('Chat_pdf.png')
+        st.image(image, width=320)
+    except Exception as e:
+        st.warning(f"No se pudo cargar la imagen: {e}")
+
+with col_info:
+    st.markdown("### 📄 Cargar Documento")
+    # PDF uploader
+    pdf = st.file_uploader("Carga el archivo PDF", type="pdf")
+
+st.divider()
 
 # Process the PDF if uploaded
 if pdf is not None and ke:
@@ -60,8 +79,8 @@ if pdf is not None and ke:
         knowledge_base = FAISS.from_texts(chunks, embeddings)
         
         # User question interface
-        st.subheader("Escribe qué quieres saber sobre el documento")
-        user_question = st.text_area(" ", placeholder="Escribe tu pregunta aquí...")
+        st.subheader("❓ Consulta el documento")
+        user_question = st.text_area("Escribe qué quieres saber sobre el documento", placeholder="Ej. ¿Cuál es el tema principal de este archivo?")
         
         # Process question when submitted
         if user_question:
@@ -78,8 +97,8 @@ if pdf is not None and ke:
             response = chain.run(input_documents=docs, question=user_question)
             
             # Display the response
-            st.markdown("### Respuesta:")
-            st.markdown(response)
+            st.markdown("### 💡 Respuesta:")
+            st.success(response)
                 
     except Exception as e:
         st.error(f"Error al procesar el PDF: {str(e)}")
